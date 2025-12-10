@@ -4,14 +4,22 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import uvicorn
 import asyncio
+from pathlib import Path
 from bilibili_api import search_raw_videos, get_user_card, get_creator_info, get_recent_videos, get_user_stats, calculate_stats, clean_text, get_video_subtitles, get_video_comments
 from mcp_client import MCPConnector
 from analyzer import generate_analysis_prompt
 from market_analyzer import generate_market_report
 
+# 计算根路径，避免从其他目录启动时找不到静态/模板文件
+BASE_DIR = Path(__file__).parent
+static_dir = BASE_DIR / "static"
+if not static_dir.exists():
+    # 当前项目未提供 static 目录，回退到 assets 以保证 FastAPI 正常启动
+    static_dir = BASE_DIR / "assets"
+
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 def format_fans(fans):
     if not fans: return "0"
