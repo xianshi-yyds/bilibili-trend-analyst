@@ -175,10 +175,10 @@ async def analyze_track(request: Request, track: str = Form(...)):
                  
                  item = {
                     "mid": mid, # ADDED MID
-                    "author": user_card['name'],
-                    "avatar": user_card['avatar'],
-                    "fans": user_card['fans'],
-                    "intro": user_card['sign'],
+                    "author": user_card['name'] if user_card else "Unknown Author",
+                    "avatar": user_card['avatar'] if user_card else "https://via.placeholder.com/80",
+                    "fans": user_card['fans'] if user_card else 0,
+                    "intro": user_card['sign'] if user_card else "Info unavailable",
                     "latest_date": latest_date_str,
                     "weekly_freq": user_stats['weekly_freq'],
                     "avg_views": user_stats['avg_views_5'],
@@ -445,4 +445,4 @@ async def analyze_track(request: Request, track: str = Form(...)):
     })
 
 if __name__ == "__main__":
-    uvicorn.run("web_app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("web_app:app", host="127.0.0.1", port=8000, reload=True)

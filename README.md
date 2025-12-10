@@ -1,4 +1,6 @@
-# Bilibili Trend Analyst (B站趋势分析仪)
+# Bilibili Trend Analyst
+
+[中文文档](README_CN.md) | **English**
 
 A powerful tool for analyzing Bilibili creators, trends, and video performance. Built with Python (FastAPI) and modern web technologies.
 
@@ -10,21 +12,36 @@ A powerful tool for analyzing Bilibili creators, trends, and video performance. 
 - 📉 **Market Dashboard**: Visualize competition landscape, audience positioning, and market gaps.
 - 🛡️ **Robust Fallback**: Advanced anti-scraping bypass and multi-stage fallback mechanisms ensure data availability.
 
+## Gallery
+
+| Home | Track Analysis | Creator Detail |
+| :---: | :---: | :---: |
+| ![Home](assets/demo_home.png) | ![Track](assets/demo_track.png) | ![Creator](assets/demo_creator.png) |
+
 ## Setup
 
 1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/your-repo/bilibili-trend-analyst.git
+    cd bilibili-trend-analyst
+    ```
+
 2.  **Install dependencies**:
     ```bash
     pip install -r requirements.txt
     ```
+
 3.  **Configuration**:
     - Copy `.env.example` to `.env`
     - Fill in your Bilibili `SESSDATA` (Cookie) for authenticated access (Required for full stats).
+
 4.  **Run the server**:
     ```bash
     python web_app.py
     ```
-5.  **Access**: Open `http://localhost:8000`
+
+5.  **Access**: 
+    Open browser and visit: `http://localhost:8000`
 
 ## Tech Stack
 
