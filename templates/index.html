@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilibili 赛道分析师</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --bg-dark: #0a0a0f;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Ambient Background */
+        .ambient-light {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(0, 243, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 255, 0.1) 0%, transparent 40%);
+            animation: pulse-bg 10s infinite alternate;
+        }
+
+        @keyframes pulse-bg {
+            0% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transform: skewX(-25deg);
+            animation: shine 8s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: translateX(-100%) skewX(-25deg);
+            }
+
+            20% {
+                transform: translateX(100%) skewX(-25deg);
+            }
+
+            100% {
+                transform: translateX(100%) skewX(-25deg);
+            }
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, white 0%, #a5a5a5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            text-align: center;
+            letter-spacing: -1px;
+        }
+
+        p.subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 18px 24px;
+            padding-right: 60px;
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+            transition: color 0.3s ease;
+        }
+
+        input[type="text"]:focus+.input-icon {
+            color: var(--neon-blue);
+        }
+
+        button.cta-btn {
+            width: 100%;
+            background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%);
+            border: none;
+            border-radius: 16px;
+            padding: 18px;
+            color: #000;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button.cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 201, 255, 0.3);
+        }
+
+        button.cta-btn span.loader {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-top: 3px solid #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Loading State */
+        button.cta-btn.loading {
+            background: #333;
+            color: #888;
+            pointer-events: none;
+        }
+
+        button.cta-btn.loading span.text {
+            display: none;
+        }
+
+        button.cta-btn.loading span.loader {
+            display: block;
+        }
+
+        /* History Tags */
+        .history-container {
+            margin-top: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .history-tag {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .history-tag:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--neon-pink);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            margin-top: 3rem;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ambient-light"></div>
+
+    <div class="glass-card">
+        <h1>Bilibili Trend Analyst</h1>
+        <p class="subtitle">深度挖掘 B 站蓝海赛道与优质创作者</p>
+
+        <form action="/analyze" method="post" onsubmit="showLoading()">
+            <div class="input-group">
+                <input type="text" id="trackInput" name="track" placeholder="输入赛道关键词 (如: AI) 或 粘贴视频链接..." required
+                    autocomplete="off">
+                <div class="input-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </div>
+            </div>
+
+            <button type="submit" class="cta-btn" id="analyzeBtn">
+                <span class="text">开始深度挖掘</span>
+                <span class="loader"></span>
+            </button>
+        </form>
+
+        <div class="history-container" id="history-tags">
+            <!-- JS populates this -->
+        </div>
+    </div>
+
+    <div class="footer">
+        Powered by Multi-Agent AI System
+    </div>
+
+    <script>
+        function showLoading() {
+            const btn = document.getElementById('analyzeBtn');
+            btn.classList.add('loading');
+        }
+
+        // Reset state when navigating back
+        window.addEventListener('pageshow', function (event) {
+            const btn = document.getElementById('analyzeBtn');
+            btn.classList.remove('loading');
+            loadHistory(); // Reload history on back navigation
+        });
+
+        // Load History
+        function loadHistory() {
+            const container = document.getElementById('history-tags');
+            if (!container) return;
+
+            try {
+                const history = JSON.parse(localStorage.getItem('bili_trend_history') || '[]');
+
+                if (history.length === 0) {
+                    container.innerHTML = '<span style="color:rgba(255,255,255,0.2); font-size:0.8rem;">暂无搜索记录</span>';
+                    return;
+                }
+
+                let html = '';
+                history.forEach(term => {
+                    html += `<div class="history-tag" onclick="useHistory('${term}')">${term}</div>`;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                console.error("History Load Failed", e);
+            }
+        }
+
+        function useHistory(term) {
+            const input = document.getElementById('trackInput');
+            input.value = term;
+            showLoading(); // UI Feedback
+            document.querySelector('form').submit();
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', loadHistory);
+    </script>
+</body>
+
+</html>
