@@ -17,10 +17,12 @@ if not SESSDATA:
 COOKIE_STR = f"buvid3=infoc; SESSDATA={SESSDATA};"
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     "Referer": "https://www.bilibili.com/",
     "Origin": "https://www.bilibili.com",
-    "Cookie": COOKIE_STR
+    "Cookie": COOKIE_STR,
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
 }
 
 import re
@@ -59,8 +61,8 @@ def search_raw_videos(keyword, limit=50):
         return []
 
 def get_creator_info(mid):
-    """Get detailed user info for a specific creator."""
-    return get_user_card(mid)
+    """Get detailed user info for a specific creator (Robust)."""
+    return get_user_info_robust(mid)
 
 
 def get_user_stats(mid):
@@ -100,6 +102,174 @@ def get_user_card(mid):
         print(f"Get User Card failed: {e}")
         return None
 
+def get_user_info_via_search(mid):
+    """
+    Fallback: Get user info by searching for their MID.
+    This often bypasses the -352 Risk Check on direct profile lookup.
+    """
+    url = "https://api.bilibili.com/x/web-interface/search/type"
+    params = {
+        "keyword": str(mid),
+        "search_type": "bili_user",
+        "page": 1,
+        "page_size": 1
+    }
+    try:
+        res = requests.get(url, headers=HEADERS, params=params)
+        data = res.json()
+        print(f"DEBUG SEARCH: Code={data.get('code')}, Data={str(data.get('data'))[:100]}")
+        if data['code'] == 0:
+            results = data['data'].get('result', [])
+            if results:
+                # The first result should be the user if searching by MID
+                # Verify MID to be safe
+                user = results[0]
+                # print(f"DEBUG SEARCH: Found user mid={user['mid']}")
+                if str(user['mid']) == str(mid):
+                    return {
+                        "mid": mid,
+                        "name": user['uname'],
+                        "fans": user['fans'], # formatting might be needed? Usually int or str
+                        "sign": user['usign'],
+                        "avatar": "https:" + user['upic'] if user['upic'].startswith("//") else user['upic']
+                    }
+                else:
+                    print(f"DEBUG SEARCH: Mismatch MID {user['mid']} != {mid}")
+            else:
+                 print("DEBUG SEARCH: No results found.")
+        else:
+            print(f"DEBUG SEARCH: API Error {data['message']}")
+    except Exception as e:
+        print(f"Search User Info Fallback Failed: {e}")
+
+    # Fallback 2: Search for Video (to extract author)
+    # This is useful if the user is hidden from 'bili_user' search but has videos.
+    try:
+        print(f"Trying Video Search Fallback for {mid}...")
+        video_params = {
+            "keyword": str(mid),
+            "search_type": "video",
+            "page": 1
+        }
+        res = requests.get(url, headers=HEADERS, params=video_params)
+        data = res.json()
+        print(f"DEBUG VIDEO SEARCH: Code={data.get('code')}")
+        if data['code'] == 0:
+            results = data['data'].get('result', [])
+            print(f"DEBUG VIDEO SEARCH: Found {len(results)} results.")
+            if results:
+                # Use the first video's author info
+                v = results[0]
+                print(f"DEBUG VIDEO SEARCH: First result mid={v.get('mid')}, author={v.get('author')}")
+                
+                # 'mid' in video result should match
+                # Relaxed check: If mid matches OR if author is '账号已注销' (Account Deleted)
+                msg_mid = str(v.get('mid'))
+                if msg_mid == str(mid) or v.get('author') == '账号已注销':
+                    print(f"DEBUG VIDEO SEARCH: Match! Returning info.")
+                    return {
+                        "mid": mid,
+                        "name": v['author'], # or v['uname']
+                        "fans": 0, # Video search doesn't give fans
+                        "sign": "Found via Video Search",
+                        "avatar": "https:" + v['upic'] if v['upic'].startswith("//") else v['upic']
+                    }
+                else:
+                    print(f"DEBUG VIDEO SEARCH: Mismatch MID {msg_mid} != {mid}")
+    except Exception as e:
+        print(f"Search Video Fallback Failed: {e}")
+
+    return None
+
+def get_user_info_robust(mid):
+    """
+    Robust User Info Fetcher:
+    1. Try standard `get_user_card`
+    2. Try `get_space_feed_videos` (extract author info)
+    3. Try `get_user_stats` (fans only) and return minimal info
+    """
+    # 1. Standard
+    card = get_user_card(mid)
+    if card: return card
+    
+    print(f"Card API failed for {mid}. Trying robust fallback...")
+    
+    # 2. Priority Fallback: Search (Most reliable when blocked)
+    print(f"Trying Search Fallback for user info {mid}...")
+    search_info = get_user_info_via_search(mid)
+    if search_info:
+        return search_info
+
+    # 3. Feed Fallback (Extract name/avatar from video items)
+    # We ask for limit=1 just to get the author module
+    feed_items = get_space_feed_videos(mid, limit=1)
+    
+    if feed_items:
+        # Note: get_space_feed_videos returns simplified list. 
+        # But we need the RAW response to get author info properly if we didn't save it.
+        # WAIT: get_space_feed_videos returns processed "processed" list.
+        # We need to hack it OR fetch again? 
+        # Actually, get_space_feed_videos helper in this file filters everything out.
+        # Let's write a targeted "get_feed_author" helper or just inline the request here for robustness.
+        pass
+
+    # Let's do a raw request here to be sure
+    url = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space"
+    params = {"host_mid": mid, "timezone_offset": -480}
+    
+    name = "Unknown"
+    avatar = "https://via.placeholder.com/80"
+    sign = "Profile Unavailable (Rate Limit)"
+    
+    # Try Acc Info Fallback first (often better than feed)
+    try:
+        acc_url = "https://api.bilibili.com/x/space/wbi/acc/info"
+        acc_res = requests.get(acc_url, headers=HEADERS, params={"mid": mid})
+        acc_data = acc_res.json()
+        if acc_data['code'] == 0:
+            info = acc_data['data']
+            return {
+                "mid": mid,
+                "name": info['name'],
+                "fans": get_user_stats(mid)['follower'] if get_user_stats(mid) else 0, # Acc info doesn't have fans, need stats
+                "sign": info['sign'],
+                "avatar": info['face']
+            }
+    except Exception as e:
+        print(f"Acc Info Fallback failed: {e}")
+
+
+
+    try:
+        res = requests.get(url, headers=HEADERS, params=params)
+        data = res.json()
+        if data['code'] == 0 and 'items' in data['data']:
+            items = data['data']['items']
+            for item in items:
+                # Try to find author module
+                if 'modules' in item and 'module_author' in item['modules']:
+                    author = item['modules']['module_author']
+                    name = author.get('name', name)
+                    avatar = author.get('face', avatar)
+                    # sign isn't usually in feed author module, but that's fine
+                    break
+    except Exception as e:
+        print(f"Feed Author Fallback failed: {e}")
+        
+    # 3. Fans Fallback
+    stats = get_user_stats(mid)
+    fans = stats['follower'] if stats else 0
+    
+    # If we still have "Unknown" name, we might be truly blocked or ID invalid.
+    # But return what we have.
+    return {
+        "mid": mid,
+        "name": name,
+        "fans": fans,
+        "sign": sign,
+        "avatar": avatar
+    }
+
 def get_space_feed_videos(mid, limit=10):
     """Fallback: Get user videos via 'feed/space' (Dynamic) endpoint."""
     url = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space"
@@ -121,11 +291,24 @@ def get_space_feed_videos(mid, limit=10):
                 if item['type'] == "DYNAMIC_TYPE_AV": # Only Video types
                     module_dynamic = item['modules']['module_dynamic']['major']['archive']
                     pub_ts = item['modules']['module_author']['pub_ts']
+
+                    play_str = module_dynamic['stat']['play']
+                    play_count = 0
+                    try:
+                        if '万' in str(play_str):
+                            play_count = int(float(play_str.replace('万', '')) * 10000)
+                        elif '亿' in str(play_str):
+                            play_count = int(float(play_str.replace('亿', '')) * 100000000)
+                        else:
+                            play_count = int(play_str)
+                    except:
+                        play_count = 0
+
                     processed.append({
                         "bvid": module_dynamic['bvid'],
                         "title": clean_text(module_dynamic['title']),
-                        "play": int(module_dynamic['stat']['play']),
-                        "created": pub_ts,
+                        "play": play_count,
+                        "created": int(pub_ts),
                         "pic": module_dynamic['cover'],
                         "length": module_dynamic['duration_text'] # Text format "01:23"
                     })
@@ -136,25 +319,22 @@ def get_space_feed_videos(mid, limit=10):
         print(f"Feed Fallback failed: {e}")
         return []
 
-def get_recent_videos(mid, limit=5):
-    """Get recent videos using Search API -> Feed Fallback."""
-    url = "https://api.bilibili.com/x/space/arc/search"
-    params = {
-        "mid": mid,
-        "ps": limit,
-        "tid": 0,
-        "pn": 1,
-        "order": "pubdate",
-        "jsonp": "jsonp"
-    }
+
     
-def get_search_videos_fallback(mid, limit=10):
+def get_search_videos_fallback(mid, limit=10, known_name=None):
     """Ultimate Fallback: Search for videos by creator name."""
     try:
         # 1. We need the creator's name first
-        card = get_user_card(mid)
-        if not card: return []
-        name = card['name']
+        if known_name:
+            name = known_name
+        else:
+            card = get_user_card(mid)
+            if not card: return []
+            name = card['name']
+            
+        if not name or name in ["Unknown", "Unknown User"]:
+            print(f"Skipping Search Fallback for invalid name: {name}")
+            return []
         
         print(f"Trying Search Fallback for {name} (mid={mid})...")
         url = "https://api.bilibili.com/x/web-interface/search/type"
@@ -178,7 +358,7 @@ def get_search_videos_fallback(mid, limit=10):
                         "bvid": item['bvid'],
                         "title": clean_text(item['title']),
                         "play": item['play'], # Search API returns Int or Str? usually Int
-                        "created": item['pubdate'],
+                        "created": int(item['pubdate']),
                         "pic": "https:" + item['pic'] if item['pic'].startswith("//") else item['pic'],
                         "length": item['duration']
                     })
@@ -188,7 +368,7 @@ def get_search_videos_fallback(mid, limit=10):
         print(f"Search Fallback Failed: {e}")
         return []
 
-def get_recent_videos(mid, limit=5):
+def get_recent_videos(mid, limit=5, known_name=None):
     """Get recent videos using Search API -> Feed Fallback -> Name Search Fallback."""
     url = "https://api.bilibili.com/x/space/arc/search"
     params = {
@@ -211,7 +391,7 @@ def get_recent_videos(mid, limit=5):
                     "bvid": v['bvid'],
                     "title": clean_text(v['title']),
                     "play": v['play'],
-                    "created": v['created'],
+                    "created": int(v['created']),
                     "pic": v['pic'],
                     "length": v['length']
                 })
@@ -228,7 +408,7 @@ def get_recent_videos(mid, limit=5):
     
     # Fallback 2: Search by Name
     print(f"Trying Search fallback for mid={mid}...")
-    return get_search_videos_fallback(mid, limit)
+    return get_search_videos_fallback(mid, limit, known_name=known_name)
 
 def get_video_comments(bvid):
     """Fetch top comments for a video."""
@@ -319,8 +499,8 @@ def calculate_stats(videos):
         weekly_freq = 1 # Assume at least 1 if lists exists
     else:
         subset = videos[:5] # Look at recent behavior
-        first = subset[0]['created']
-        last = subset[-1]['created']
+        first = int(subset[0]['created'])
+        last = int(subset[-1]['created'])
         days = (first - last) / (24 * 3600)
         if days > 0:
             weekly_freq = round((len(subset) / days) * 7, 1)

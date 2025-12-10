@@ -124,6 +124,13 @@
 <body>
     <a href="javascript:history.back()" class="back-link">← 返回搜索结果</a>
 
+    {% if warning %}
+    <div
+        style="background: #331010; color: #ff8888; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #552222;">
+        ⚠️ {{ warning }}
+    </div>
+    {% endif %}
+
     <div class="header">
         <img src="{{ user.face }}" class="avatar" referrerpolicy="no-referrer"
             onerror="this.src='https://via.placeholder.com/80'">

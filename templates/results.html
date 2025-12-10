@@ -241,13 +241,15 @@
             <div class="creator-card p-5 group flex flex-col h-full">
                 <!-- Header: Avatar & Name -->
                 <div class="flex items-center gap-4 mb-4">
-                    <a href="/creator/{{ item.mid }}" target="_blank" class="relative shrink-0">
+                    <a href="/creator/{{ item.mid }}?name={{ item.author }}&avatar={{ item.avatar }}" target="_blank"
+                        class="relative shrink-0">
                         <img src="{{ item.avatar }}" alt="{{ item.author }}"
                             class="w-14 h-14 rounded-full border-2 border-white/10 group-hover:border-neon-blue/50 transition-colors object-cover"
                             onerror="this.src='https://via.placeholder.com/80'">
                     </a>
                     <div class="flex-1 min-w-0">
-                        <a href="/creator/{{ item.mid }}" target="_blank" class="block">
+                        <a href="/creator/{{ item.mid }}?name={{ item.author }}&avatar={{ item.avatar }}"
+                            target="_blank" class="block">
                             <h3 class="font-bold text-lg text-white truncate hover:text-neon-blue transition-colors">{{
                                 item.author }}</h3>
                         </a>

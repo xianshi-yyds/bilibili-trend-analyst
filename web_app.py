@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import uvicorn
 import asyncio
-from bilibili_api import search_raw_videos, get_user_card, get_recent_videos, get_user_stats, calculate_stats, clean_text, get_video_subtitles, get_video_comments
+from bilibili_api import search_raw_videos, get_user_card, get_creator_info, get_recent_videos, get_user_stats, calculate_stats, clean_text, get_video_subtitles, get_video_comments
 from mcp_client import MCPConnector
 from analyzer import generate_analysis_prompt
 from market_analyzer import generate_market_report
@@ -12,6 +12,16 @@ from market_analyzer import generate_market_report
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+def format_fans(fans):
+    if not fans: return "0"
+    if isinstance(fans, str) and 'w' in fans: return fans
+    try:
+        f = int(fans)
+        if f >= 10000: return f"{f/10000:.1f}w"
+        return str(f)
+    except:
+        return str(fans)
 
 import datetime # Fix UnboundLocalError by importing at top level
 
@@ -21,13 +31,38 @@ MCP_SERVER_URL = "https://mcp.api-inference.modelscope.net/360783e5932148/mcp"
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+from typing import Optional
 @app.get("/creator/{mid}", response_class=HTMLResponse)
-async def creator_detail(request: Request, mid: int):
-    # 1. Get User Card
-    user_card = get_user_card(mid)
+async def creator_detail(request: Request, mid: int, name: Optional[str] = None, avatar: Optional[str] = None):
+    # 1. Get User Info (Robust)
+    user_card = get_creator_info(mid) # Helper now calls get_user_info_robust
     
-    # 2. Get Recent Videos (fetch 20 to be safe, show 10)
-    raw_videos = get_recent_videos(mid, limit=20)
+    warning = None
+    if not user_card or user_card['name'] == "Unknown":
+        warning = "API 请求受限 (Rate Limited)。部分数据无法显示。建议稍后再试。"
+        # Fallback if params provided
+        if name:
+            user_card = {
+                "mid": mid,
+                "name": name,
+                "fans": "未知",
+                "sign": "API Limit - Fallback Mode",
+                "avatar": avatar or "https://via.placeholder.com/80"
+            }
+        elif not user_card:
+             # Minimal dummy
+             user_card = {
+                "mid": mid,
+                "name": "Unknown User",
+                "fans": 0,
+                "sign": "Data unavailable due to API limits",
+                "avatar": "https://via.placeholder.com/80"
+             }
+
+    # 2. Get Recent Videos
+    # Pass known name to help searching if needed
+    known_name = user_card.get('name') if user_card.get('name') != "Unknown User" else name
+    raw_videos = get_recent_videos(mid, limit=20, known_name=known_name)
     videos_10 = raw_videos[:10]
     
     # 3. Calculate Stats
@@ -41,6 +76,8 @@ async def creator_detail(request: Request, mid: int):
         max_play = 0
         avg_play = 0
         stats = {"weekly_freq": 0}
+        if not warning:
+             warning = "未找到最近视频，可能是 API 限制或博主无公开视频。"
     
     # Process for Template
     processed_videos = []
@@ -56,13 +93,23 @@ async def creator_detail(request: Request, mid: int):
             "date": dt.strftime("%Y-%m-%d")
         })
         
+    # Map 'avatar' to 'face' for template compatibility if needed
+    # But template uses {{ user.face }}?
+    # get_user_card returns 'avatar'. 
+    # Let's standardize on 'face' for template or change template.
+    # Changing template to accept 'avatar' (standard in this app) is better but current template has 'face'.
+    # Let's fix the user object to have 'face' = 'avatar'
+    user_card['face'] = user_card.get('avatar', user_card.get('face', ''))
+    user_card['fans'] = format_fans(user_card['fans'])
+
     return templates.TemplateResponse("creator.html", {
         "request": request,
         "user": user_card,
         "videos": processed_videos,
         "avg_views": avg_play,
         "max_views": max_play,
-        "weekly_freq": stats['weekly_freq']
+        "weekly_freq": stats['weekly_freq'],
+        "warning": warning
     })
 
 @app.post("/analyze", response_class=HTMLResponse)
