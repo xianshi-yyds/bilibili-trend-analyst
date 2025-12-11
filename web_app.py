@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Form, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 import uvicorn
 import sys
 import os
@@ -177,6 +177,8 @@ async def creator_detail(request: Request, mid: str, name: Optional[str] = None,
     # Changing template to accept 'avatar' (standard in this app) is better but current template has 'face'.
     # Let's fix the user object to have 'face' = 'avatar'
     user_card['face'] = user_card.get('avatar', user_card.get('face', ''))
+    if user_card['face'] and user_card['face'].startswith('//'):
+        user_card['face'] = 'https:' + user_card['face']
     user_card['fans'] = format_fans(user_card['fans'])
 
     return templates.TemplateResponse("creator.html", {
@@ -357,13 +359,13 @@ async def analyze_track(request: Request, track: str = Form(...), platform_input
         # Avatar Proxy
         avatar_url = user_card.get('avatar', "")
         if platform_input == 'bilibili':
-             # Ensure proxy usage for Bilibili
-             if avatar_url:
-                  avatar_url = f"/img_proxy?url={avatar_url}"
+             # Ensure HTTPS if missing (though API usually provides it)
+             if avatar_url and avatar_url.startswith('//'):
+                  avatar_url = 'https:' + avatar_url
         
         cover_url = latest_post.get('pic', "")
-        if platform_input == 'bilibili' and cover_url:
-             cover_url = f"/img_proxy?url={cover_url}"
+        if platform_input == 'bilibili' and cover_url and cover_url.startswith('//'):
+             cover_url = 'https:' + cover_url
 
         item = {
             "mid": real_mid,

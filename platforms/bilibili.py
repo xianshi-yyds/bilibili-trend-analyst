@@ -259,8 +259,15 @@ class BilibiliPlatform(BasePlatform):
         return None
 
     def get_recent_videos(self, mid, limit=5):
-        url = "https://api.bilibili.com/x/space/arc/search"
+        # Use WBI Endpoint
+        url = "https://api.bilibili.com/x/space/wbi/arc/search"
         params = {"mid": mid, "ps": limit, "tid": 0, "pn": 1, "order": "pubdate"}
+        
+        # Add WBI Signature
+        img_key, sub_key = self.get_wbi_keys()
+        if img_key and sub_key:
+            params = self.enc_wbi(params, img_key, sub_key)
+            
         try:
             response = requests.get(url, headers=self.headers, params=params)
             data = response.json()

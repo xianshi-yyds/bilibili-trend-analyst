@@ -132,7 +132,7 @@
     {% endif %}
 
     <div class="header">
-        <img src="{{ user.face }}" class="avatar" referrerpolicy="no-referrer"
+        <img src="/img_proxy?url={{ user.face }}" class="avatar" referrerpolicy="no-referrer"
             onerror="this.src='https://via.placeholder.com/80'">
         <div>
             <div class="name">{{ user.name }}</div>
