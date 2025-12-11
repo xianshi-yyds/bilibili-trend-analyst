@@ -107,7 +107,13 @@
             /* 16:9 */
             border-radius: 12px;
             overflow: hidden;
+            overflow: hidden;
             margin-top: 1rem;
+        }
+
+        .video-cover-container.vertical {
+            padding-bottom: 150%;
+            /* 2:3 aspect ratio approx for vertical content */
         }
 
         .video-cover {
@@ -241,11 +247,12 @@
             <div class="creator-card p-5 group flex flex-col h-full">
                 <!-- Header: Avatar & Name -->
                 <div class="flex items-center gap-4 mb-4">
-                    <a href="/creator/{{ item.mid }}?name={{ item.author }}&avatar={{ item.avatar }}" target="_blank"
-                        class="relative shrink-0">
-                        <img src="{{ item.avatar }}" alt="{{ item.author }}"
-                            class="w-14 h-14 rounded-full border-2 border-white/10 group-hover:border-neon-blue/50 transition-colors object-cover"
-                            onerror="this.src='https://via.placeholder.com/80'">
+                    <a href="/creator/{{ item.mid }}?name={{ item.author }}&avatar={{ item.avatar }}" target="_blank">
+                        <!-- Avatar -->
+                        <div class="relative w-14 h-14 flex-shrink-0">
+                            <img src="/img_proxy?url={{ item.avatar }}" alt="{{ item.author }}"
+                                class="w-full h-full rounded-full object-cover border-2 border-white/10 group-hover:border-neon-blue/50 transition-colors">
+                        </div>
                     </a>
                     <div class="flex-1 min-w-0">
                         <a href="/creator/{{ item.mid }}?name={{ item.author }}&avatar={{ item.avatar }}"
@@ -314,10 +321,11 @@
                 <!-- Video Preview -->
                 <div class="mb-4 relative group/video">
                     <a href="{{ item.latest_video_url }}" target="_blank"
-                        class="block video-cover-container bg-black/50 overflow-hidden rounded-xl h-32 relative">
-                        <img src="{{ item.latest_video_cover }}"
+                        class="block video-cover-container bg-black/50 overflow-hidden rounded-xl h-32 relative {% if platform == 'douyin' %}vertical{% endif %}">
+                        <img src="/img_proxy?url={{ item.latest_video_cover }}"
                             class="w-full h-full object-cover opacity-80 group-hover/video:opacity-100 transition-opacity"
-                            alt="Video Cover">
+                            alt="Video Cover"
+                            onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiB2aWV3Qm94PSIwIDAgNjAwIDQwMCI+CiAgPHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiMxZTFlMWUiIC8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjZmZmZmZmIj5JbWFnZSBVbmF2YWlsYWJsZTwvdGV4dD4KPC9zdmc+'">
                         <div
                             class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/video:opacity-100 transition-opacity bg-black/40">
                             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
@@ -337,7 +345,7 @@
                 </div>
 
                 <!-- Action Button -->
-                <a href="/creator/{{ item.mid }}" target="_blank"
+                <a href="/creator/{{ item.mid }}?platform={{ platform }}" target="_blank"
                     class="mt-4 w-full py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-neon-blue/50 text-center text-sm font-medium transition-all text-white flex items-center justify-center gap-2">
                     <span>深度分析此账号</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"

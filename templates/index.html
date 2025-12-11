@@ -252,10 +252,50 @@
     <div class="ambient-light"></div>
 
     <div class="glass-card">
-        <h1>Bilibili Trend Analyst</h1>
-        <p class="subtitle">深度挖掘 B 站蓝海赛道与优质创作者</p>
+        <h1
+            class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-blue to-neon-purple mb-4 tracking-tight">
+            Trend Analyst
+        </h1>
 
-        <form action="/analyze" method="post" onsubmit="showLoading()">
+        <!-- Platform Selector -->
+        <div class="mb-8">
+            <label class="block text-gray-400 text-sm font-bold mb-4">Select Platform</label>
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Bilibili Option -->
+                <label class="cursor-pointer">
+                    <input type="radio" name="platform" value="bilibili" class="peer sr-only" checked
+                        onchange="updatePlatform('bilibili')">
+                    <div
+                        class="rounded-xl border-2 border-gray-700 bg-gray-800 p-4 hover:border-blue-500 peer-checked:border-pink-500 peer-checked:bg-gray-800 transition-all text-center group">
+                        <div class="text-3xl mb-2 group-hover:scale-110 transition-transform">📺</div>
+                        <div class="font-bold text-gray-300 group-hover:text-white">Bilibili</div>
+                        <div class="text-xs text-gray-500 mt-1">Long Video & Community</div>
+                    </div>
+                </label>
+
+                <!-- Douyin Option -->
+                <label class="cursor-pointer">
+                    <input type="radio" name="platform" value="douyin" class="peer sr-only"
+                        onchange="updatePlatform('douyin')">
+                    <div
+                        class="rounded-xl border-2 border-gray-700 bg-gray-800 p-4 hover:border-blue-500 peer-checked:border-black peer-checked:bg-gray-900 transition-all text-center group relative overflow-hidden">
+                        <!-- Douyin Gradient Border effect mockup via CSS or just simpler style -->
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-pink-600/20 opacity-0 peer-checked:opacity-100 transition-opacity">
+                        </div>
+                        <div class="text-3xl mb-2 group-hover:scale-110 transition-transform relative z-10">🎵</div>
+                        <div class="font-bold text-gray-300 group-hover:text-white relative z-10">Douyin</div>
+                        <div class="text-xs text-gray-500 mt-1 relative z-10">Short Video & Trends</div>
+                    </div>
+                </label>
+            </div>
+            <input type="hidden" name="platform_input" id="platform_input" value="bilibili">
+        </div>
+
+        <p class="text-gray-400 text-lg mb-12 max-w-2xl mx-auto leading-relaxed">深度挖掘 B 站蓝海赛道与优质创作者</p>
+
+        <form action="/analyze" method="post" class="relative max-w-2xl mx-auto group" onsubmit="capturePlatform()">
+            <input type="hidden" name="platform_input" id="platform_input" value="bilibili">
             <div class="input-group">
                 <input type="text" id="trackInput" name="track" placeholder="输入赛道关键词 (如: AI) 或 粘贴视频链接..." required
                     autocomplete="off">
@@ -328,6 +368,13 @@
 
         // Init
         document.addEventListener('DOMContentLoaded', loadHistory);
+    </script>
+    <script>
+        // Sync platform selection
+        function capturePlatform() {
+            const platform = document.querySelector('input[name="platform"]:checked').value;
+            document.getElementById('platform_input').value = platform;
+        }
     </script>
 </body>
 

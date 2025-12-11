@@ -359,7 +359,8 @@ def get_search_videos_fallback(mid, limit=10, known_name=None):
                         "title": clean_text(item['title']),
                         "play": item['play'], # Search API returns Int or Str? usually Int
                         "created": int(item['pubdate']),
-                        "pic": "https:" + item['pic'] if item['pic'].startswith("//") else item['pic'],
+                        # Force HTTPS for clarity and referrer handling
+                        "pic": item['pic'].replace("http://", "https://") if item['pic'].startswith("http") else ("https:" + item['pic'] if item['pic'].startswith("//") else item['pic']),
                         "length": item['duration']
                     })
             return processed[:limit]

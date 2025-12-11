@@ -1,6 +1,8 @@
 fastapi
 uvicorn
 requests
-python-multipart
-python-dotenv
 jinja2
+douyin-tiktok-scraper
+playwright
+python-multipart
+# mcp # removed generic mcp name, assuming custom implementation or not needed in pip
