@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="referrer" content="no-referrer"> <!-- Fix image loading -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ track }} - 深度分析报告</title>
+    <title>test - 深度分析报告</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
         rel="stylesheet">
@@ -185,11 +185,8 @@
 
     <header class="py-6 px-4 md:px-8 flex justify-between items-center max-w-7xl mx-auto w-full">
         <div class="flex items-center gap-4">
-            <h1 class="text-2xl font-bold tracking-tight">赛道: <span class="keyword-gradient">{{ track }}</span></h1>
-            {% if "Video:" in track %}
-            <span
-                class="px-2 py-0.5 rounded text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30">单视频模式</span>
-            {% endif %}
+            <h1 class="text-2xl font-bold tracking-tight">赛道: <span class="keyword-gradient">test</span></h1>
+            
         </div>
         <a href="/" class="back-btn text-sm font-medium">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -203,16 +200,10 @@
 
     <main class="max-w-7xl mx-auto px-4 md:px-8 py-8">
 
-        {% if not results %}
-        <div
-            class="flex flex-col items-center justify-center p-20 glass-card text-center rounded-3xl border border-white/5 bg-white/[0.02]">
-            <h2 class="text-2xl font-bold text-gray-400 mb-2">未找到相关博主，或 API 请求被拦截。</h2>
-            <p class="text-gray-600">请尝试不同的关键词，或者稍后再试。</p>
-        </div>
-        {% else %}
+        
 
         <!-- Market Insight Dashboard -->
-        {% if market_report %}
+        
         <div
             class="glass-card p-8 mb-10 rounded-3xl border border-neon-blue/20 bg-gradient-to-r from-blue-900/20 to-purple-900/20">
             <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
@@ -226,48 +217,47 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="flex flex-col gap-2">
                     <span class="text-sm text-gray-400">核心受众画像</span>
-                    <span class="text-2xl font-bold text-white">{{ market_report.audience_summary }}</span>
+                    <span class="text-2xl font-bold text-white">多元化</span>
                     <span class="text-xs text-gray-500">基于内容关键词分析</span>
                 </div>
                 <div class="flex flex-col gap-2">
                     <span class="text-sm text-gray-400">赛道领跑者</span>
-                    <span class="text-2xl font-bold text-neon-green">{{ market_report.top_performer }}</span>
+                    <span class="text-2xl font-bold text-neon-green">Test_Douyin_User</span>
                     <span class="text-xs text-gray-500">近期流量表现最佳</span>
                 </div>
                 <div class="flex flex-col gap-2">
                     <span class="text-sm text-gray-400">差异化机会点</span>
-                    <p class="text-sm text-gray-300 leading-relaxed">{{ market_report.market_gap }}</p>
+                    <p class="text-sm text-gray-300 leading-relaxed">目前头部内容集中在基础教学，进阶实战内容相对稀缺，存在差异化机会。</p>
                 </div>
             </div>
         </div>
-        {% endif %}
+        
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {% for item in results %}
+            
             <div class="creator-card p-5 group flex flex-col h-full">
                 <!-- Header: Avatar & Name -->
                 <div class="flex items-center gap-4 mb-4">
-                    <a href="/creator/{{ item.mid }}?name={{ item.author }}&avatar={{ item.avatar }}&platform={{ platform }}"
+                    <a href="/creator/MS4wLjABAAAA?name=Test_Douyin_User&avatar=https://p3-pc.douyinpic.com/img/aweme-avatar/tos-cn-avt-0015_f73b22baHQ4_1080x1080.jpeg&platform=douyin"
                         target="_blank">
                         <!-- Avatar -->
                         <div class="relative w-14 h-14 flex-shrink-0">
-                            <img src="/img_proxy?url={{ item.avatar }}" alt="{{ item.author }}"
+                            <img src="/img_proxy?url=https://p3-pc.douyinpic.com/img/aweme-avatar/tos-cn-avt-0015_f73b22baHQ4_1080x1080.jpeg" alt="Test_Douyin_User"
                                 class="w-full h-full rounded-full object-cover border-2 border-white/10 group-hover:border-neon-blue/50 transition-colors">
                         </div>
                     </a>
                     <div class="flex-1 min-w-0">
-                        <a href="/creator/{{ item.mid }}?name={{ item.author }}&avatar={{ item.avatar }}&platform={{ platform }}"
+                        <a href="/creator/MS4wLjABAAAA?name=Test_Douyin_User&avatar=https://p3-pc.douyinpic.com/img/aweme-avatar/tos-cn-avt-0015_f73b22baHQ4_1080x1080.jpeg&platform=douyin"
                             target="_blank" class="block">
-                            <h3 class="font-bold text-lg text-white truncate hover:text-neon-blue transition-colors">{{
-                                item.author }}</h3>
+                            <h3 class="font-bold text-lg text-white truncate hover:text-neon-blue transition-colors">Test_Douyin_User</h3>
                         </a>
                         <!-- Positioning Tag -->
-                        {% if item.market_analysis %}
+                        
                         <span
                             class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] bg-white/10 text-gray-300 border border-white/10">
-                            {{ item.market_analysis.positioning }}
+                            垂直领域
                         </span>
-                        {% endif %}
+                        
                     </div>
                 </div>
 
@@ -280,50 +270,50 @@
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </svg>
-                    <span>粉丝数: <strong class="text-white">{{ item.fans }}</strong></span>
+                    <span>粉丝数: <strong class="text-white">999</strong></span>
                 </div>
 
                 <!-- Stats Row -->
                 <div class="grid grid-cols-3 gap-2 mb-4">
                     <div class="stat-item">
-                        <div class="stat-value text-neon-green text-lg">{{ item.weekly_freq }}</div>
+                        <div class="stat-value text-neon-green text-lg">1</div>
                         <div class="stat-label text-[10px]">周更</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value text-neon-blue text-lg">{{ item.avg_views }}</div>
+                        <div class="stat-value text-neon-blue text-lg">5115</div>
                         <div class="stat-label text-[10px]">均看</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value text-purple-400 text-lg">{{ item.latest_date|default('N/A') }}</div>
+                        <div class="stat-value text-purple-400 text-lg">2025-10-05</div>
                         <div class="stat-label text-[10px]">最新</div>
                     </div>
                 </div>
 
                 <!-- Pros/Cons Analysis (New) -->
-                {% if item.market_analysis %}
+                
                 <div class="mb-4 space-y-2">
                     <div class="flex flex-wrap gap-1">
-                        {% for pro in item.market_analysis.pros %}
+                        
                         <span
                             class="px-2 py-0.5 rounded text-[10px] bg-green-500/20 text-green-300 border border-green-500/30">✓
-                            {{ pro }}</span>
-                        {% endfor %}
+                            更新稳定</span>
+                        
                     </div>
                     <div class="flex flex-wrap gap-1">
-                        {% for con in item.market_analysis.cons %}
+                        
                         <span
                             class="px-2 py-0.5 rounded text-[10px] bg-red-500/10 text-red-300 border border-red-500/20">!
-                            {{ con }}</span>
-                        {% endfor %}
+                            近期表现平稳</span>
+                        
                     </div>
                 </div>
-                {% endif %}
+                
 
                 <!-- Video Preview -->
                 <div class="mb-4 relative group/video">
-                    <a href="{{ item.latest_video_url }}" target="_blank"
-                        class="block video-cover-container bg-black/50 overflow-hidden rounded-xl h-32 relative {% if platform == 'douyin' %}vertical{% endif %}">
-                        <img src="/img_proxy?url={{ item.latest_video_cover }}"
+                    <a href="https://www.douyin.com/video/7557756675584314684" target="_blank"
+                        class="block video-cover-container bg-black/50 overflow-hidden rounded-xl h-32 relative vertical">
+                        <img src="/img_proxy?url=https://p3-pc-sign.douyinpic.com/tos-cn-p-0015c000-ce/okrwpRivAzPAU3n0e6DBERN26iIVECiiKDPcfB~tplv-dy-cropcenter:323:430.jpeg?lk3s=138a59ce&amp;x-expires=2080792800&amp;x-signature=lzfoPJ9rC05YQ0Hoslp2trCR%2F%2BA%3D&amp;from=327834062&amp;s=PackSourceEnum_PUBLISH&amp;se=true&amp;sh=323_430&amp;sc=cover&amp;biz_tag=pcweb_cover&amp;l=202512111449544E1EB9C87B143C03E461"
                             class="w-full h-full object-cover opacity-80 group-hover/video:opacity-100 transition-opacity"
                             alt="Video Cover"
                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiB2aWV3Qm94PSIwIDAgNjAwIDQwMCI+CiAgPHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiMxZTFlMWUiIC8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjZmZmZmZmIj5JbWFnZSBVbmF2YWlsYWJsZTwvdGV4dD4KPC9zdmc+'">
@@ -342,11 +332,14 @@
                     <div class="font-bold text-neon-blue mb-1 flex items-center justify-between">
                         <span>💡 内容洞察</span>
                     </div>
-                    <p class="line-clamp-4 leading-relaxed whitespace-pre-wrap">{{ item.analysis_prompt }}</p>
+                    <p class="line-clamp-4 leading-relaxed whitespace-pre-wrap">【内容摘要】No subtitles (Douyin)...
+
+【观众热评】
+Comments unavailable (Douyin)</p>
                 </div>
 
                 <!-- Action Button -->
-                <a href="/creator/{{ item.mid }}?platform={{ platform }}" target="_blank"
+                <a href="/creator/MS4wLjABAAAA?platform=douyin" target="_blank"
                     class="mt-4 w-full py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-neon-blue/50 text-center text-sm font-medium transition-all text-white flex items-center justify-center gap-2">
                     <span>深度分析此账号</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -357,15 +350,15 @@
                 </a>
 
             </div>
-            {% endfor %}
+            
         </div>
-        {% endif %}
+        
     </main>
 
     <script>
         // Move History Logic to Results Page (Only save successful searches)
         document.addEventListener('DOMContentLoaded', function () {
-            const track = "{{ track }}";
+            const track = "test";
             if (!track || track.startsWith("Video:") || track.includes("请求被拦截")) return;
 
             try {

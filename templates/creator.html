@@ -173,8 +173,8 @@
             <tr>
                 <td style="color: #aaa;">{{ v.date }}</td>
                 <td>
-                    <a href="https://www.bilibili.com/video/{{ v.bvid }}" target="_blank"
-                        style="color: #eee; text-decoration: none;">
+                    <a href="{% if platform == 'douyin' %}https://www.douyin.com/video/{{ v.bvid }}{% else %}https://www.bilibili.com/video/{{ v.bvid }}{% endif %}"
+                        target="_blank" style="color: #eee; text-decoration: none;">
                         {{ v.title }}
                     </a>
                 </td>

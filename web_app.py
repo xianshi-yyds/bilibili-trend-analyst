@@ -63,13 +63,31 @@ async def img_proxy(url: str = Query(..., description="Target Image URL")):
          return StreamingResponse(io.BytesIO(b""), media_type="image/png")
     
     try:
+        # Determine Referer based on domain
+        referer = "https://www.bilibili.com/"
+        if "douyin" in url or "amemv" in url or "tiktok" in url:
+            referer = "https://www.douyin.com/"
+        
         # Request with browser headers
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": "https://www.bilibili.com/" 
+            "Referer": referer
         }
+        
         # Use stream=True to save memory
+        # Disable verification for some CDNs if needed, but usually not required.
         r = requests.get(url, headers=headers, stream=True, timeout=5)
+        
+        # Check if we got a valid image
+        if r.status_code != 200:
+            print(f"Proxy Failed ({r.status_code}) for: {url}")
+            return StreamingResponse(io.BytesIO(b""), media_type="image/png")
+
+        # Debug Image Response
+        ct = r.headers.get("content-type", "unknown")
+        cl = r.headers.get("content-length", "unknown")
+        print(f"PROXY SUCCESS: {url[:30]}... | Type: {ct} | Len: {cl} | Status: {r.status_code}")
+            
         return StreamingResponse(r.raw, media_type=r.headers.get("content-type", "image/jpeg"))
     except Exception as e:
         print(f"Proxy Error: {e}")
@@ -203,20 +221,149 @@ async def analyze_track(request: Request, track: str = Form(...), platform_input
     # --- QUERY TYPE DETECTION (Quick Hack for Bilibili Video Links) ---
     # TODO: abstract this into api.detect_query_type(track)
     is_video_url = False
-    if platform_input == "bilibili" and ("bilibili.com/video/BV" in track or track.startswith("BV")):
-        is_video_url = True
-    elif platform_input == "douyin" and "douyin.com/video/" in track:
-        # TODO: Douyin Video Link Analysis
-        pass 
-
-    if is_video_url and platform_input == "bilibili":
-        print("  > Detected Single Video Analysis")
-        # Extract BVID
+    # --- QUERY TYPE DETECTION ---
+    
+    # 1. Douyin Logic (Link OR Search)
+    if platform_input == "douyin":
         import re
-        bvid_match = re.search(r'(BV\w+)', track)
-        if not bvid_match:
-            return templates.TemplateResponse("index.html", {"request": request, "error": "Invalid BVID/URL"})
-        bvid = bvid_match.group(1)
+        # Find any Douyin URL in the text
+        url_match = re.search(r'https?://(?:v\.douyin\.com|www\.douyin\.com|www\.iesdouyin\.com)/[a-zA-Z0-9/]+', track)
+        
+        if url_match:
+            print("  > Detected Potential Douyin Link")
+            is_video_url = True
+            target_url = url_match.group(0)
+            
+            # Resolve Short Links
+            if "v.douyin.com" in target_url:
+                print(f"  > Analyzing Short Link via HTML Scrape: {target_url}")
+                detail = api.get_video_via_html(target_url)
+                
+                if detail:
+                    date_str = "N/A"
+                    if detail.get('created'):
+                        try:
+                            date_str = datetime.datetime.fromtimestamp(detail['created']).strftime("%Y-%m-%d")
+                        except: pass
+
+                    item = {
+                        "mid": detail['author']['mid'],
+                        "author": detail['author']['name'],
+                        "avatar": detail['author']['face'] or "https://via.placeholder.com/100",
+                        "fans": format_fans(detail['author']['fans']),
+                        "intro": f"Video Analysis: {detail['title'][:30]}...",
+                        "latest_date": date_str,
+                        "weekly_freq": 1,
+                        "avg_views": detail['play'], # Uses Likes as proxy
+                        "latest_video_title": detail['title'],
+                        "latest_video_cover": detail['pic'],
+                        "latest_video_url": f"https://www.douyin.com/video/{detail['id']}",
+                        "analysis_prompt": f"【内容摘要】{detail['title']}\n\n(Note: Subtitles/Comments unavailable via HTML Scrape)",
+                        "subtitles_snippet": detail.get('subtitles', "Subtitles unavailable via HTML Scrape"),
+                        "comments_snippet": ""
+                    }
+                    analyzed_creators.append(item)
+                    return templates.TemplateResponse("results.html", {
+                        "request": request, 
+                        "track": f"Link: {detail['id']}", 
+                        "results": analyzed_creators, 
+                        "platform": platform_input
+                    })
+
+            # For long links (www.douyin.com/video/...)
+            vid = None
+            vid_match = re.search(r'video/(\d+)', target_url)
+            if vid_match:
+                vid = vid_match.group(1)
+            
+            if vid:
+                print(f"  > Extracted Douyin Video ID: {vid}")
+                detail = api.get_post_detail(vid)
+                if detail:
+                    item = {
+                        "mid": detail['author']['mid'],
+                        "author": detail['author']['name'],
+                        "avatar": detail['author']['face'],
+                        "fans": format_fans(detail['author']['fans']),
+                        "intro": f"Video Analysis: {detail['title'][:30]}...",
+                        "latest_date": datetime.datetime.fromtimestamp(detail['created']).strftime("%Y-%m-%d"),
+                        "weekly_freq": 1,
+                        "avg_views": detail['play'],
+                        "latest_video_title": detail['title'],
+                        "latest_video_cover": detail['pic'],
+                        "latest_video_url": f"https://www.douyin.com/video/{detail['id']}",
+                        "analysis_prompt": f"【内容摘要】{detail['title']}\n\n(Note: Subtitles/Comments unavailable for direct link)",
+                        "subtitles_snippet": "Subtitles unavailable via Link Analysis",
+                        "comments_snippet": ""
+                    }
+                    analyzed_creators.append(item)
+                    return templates.TemplateResponse("results.html", {
+                        "request": request, 
+                        "track": f"Link: {vid}", 
+                        "results": analyzed_creators, 
+                        "platform": platform_input
+                    })
+        
+        # --- IF NO LINK -> RUN SEARCH ---
+        else:
+            print(f"  > Douyin Keyword Search: {track}")
+            from platforms.douyin_browser import douyin_browser
+            browser_results = await douyin_browser.search(track)
+            
+            if not browser_results:
+                 # Logic for 0 results
+                 return templates.TemplateResponse("results.html", {
+                        "request": request, 
+                        "track": track, 
+                        "results": [], 
+                        "error": "Douyin Search found 0 results.",
+                        "platform": platform_input
+                 })
+                 
+            import urllib.parse
+            
+            for vid_item in browser_results:
+                 # Encode URLs to pass safely through img_proxy query params
+                 safe_avatar = urllib.parse.quote(vid_item.get('cover', '')) # Using video cover as avatar? No, separate logic.
+                 # Wait, logic above uses Ui-Avatars which is safe.
+                 # But the VIDEO COVER needs encoding.
+                 
+                 safe_cover = urllib.parse.quote(cover_url) if cover_url else ""
+                 
+                 item = {
+                    "mid": vid_item['author'],
+                    "author": vid_item['author'],
+                    # "avatar": "https://ui-avatars.com/api/?name=Douyin&background=0D8ABC&color=fff", # UI Avatars is reliable
+                    # actually let's use the nice one
+                     "avatar": "https://ui-avatars.com/api/?name=Douyin&background=0D8ABC&color=fff",
+                    "fans": "Unknown",
+                    "intro": f"Search Result: {vid_item['title']}",
+                    "latest_date": "N/A",
+                    "weekly_freq": "1", # Dummy
+                    "avg_views": "0",   # Dummy
+                    "latest_video_title": vid_item['title'],
+                    "latest_video_cover": safe_cover, 
+                    "latest_video_url": vid_item.get('link', '#'),
+                    "analysis_prompt": vid_item['title'],
+                    "subtitles_snippet": "Douyin Video Result",
+                    "comments_snippet": "N/A"
+                 }
+                 analyzed_creators.append(item)
+            
+            return templates.TemplateResponse("results.html", {
+                "request": request, 
+                "track": track, 
+                "results": analyzed_creators, 
+                "platform": platform_input
+            })
+            
+
+    
+    # 4. Bilibili Search (Legacy API)
+    elif platform_input == "bilibili":
+        print(f"  > Bilibili Keyword Search: {track}")
+        # ... existing logic ...
+        candidates = api.search_users(track)
         
         # Helper to get video info (Should be in API)
         # Using raw request for now to reuse legacy logic quickly, or strictly use API
@@ -224,49 +371,8 @@ async def analyze_track(request: Request, track: str = Form(...), platform_input
         # We need extensive info for the single video view.
         # For now, let's keep the legacy logic for Bilibili Video Analysis but routed cleanly.
         
-        import requests
-        res = requests.get("https://api.bilibili.com/x/web-interface/view", params={"bvid": bvid}, headers=bili.headers)
-        if res.status_code == 200:
-            vdata = res.json().get('data', {})
-            mid = vdata.get('owner', {}).get('mid')
-            if mid:
-                 user_card = bili.get_user_info(mid)
-                 recent_videos = [{
-                    "bvid": vdata['bvid'],
-                    "title": bili.clean_text(vdata['title']),
-                    "play": vdata['stat']['view'],
-                    "created": vdata['pubdate'],
-                    "pic": vdata['pic'],
-                    "length": vdata['duration']
-                 }]
-                 user_stats = bili.calculate_stats(recent_videos)
-                 latest_video = recent_videos[0]
-                 latest_date_str = datetime.datetime.fromtimestamp(latest_video['created']).strftime("%Y-%m-%d") if latest_video['created'] else "N/A"
-                 
-                 content_context = bili.get_video_subtitles(latest_video['bvid']) or "No content available"
-                 comments = bili.get_video_comments(latest_video['bvid'])
-                 comments_str = "\n".join(comments[:5])
-                 analysis_prompt = f"【内容摘要】{content_context[:120]}...\n\n【观众热评】\n{comments_str}"
-                 
-                 item = {
-                    "mid": mid,
-                    "author": user_card['name'] if user_card else "Unknown Author",
-                    "avatar": user_card['avatar'] if user_card else "https://via.placeholder.com/80",
-                    "fans": format_fans(user_card['fans']) if user_card else 0,
-                    "intro": user_card['sign'] if user_card else "Info unavailable",
-                    "latest_date": latest_date_str,
-                    "weekly_freq": user_stats['weekly_freq'],
-                    "avg_views": user_stats['avg_views_5'],
-                    "latest_video_title": latest_video['title'],
-                    "latest_video_cover": latest_video['pic'],
-                    "latest_video_url": f"https://www.bilibili.com/video/{latest_video['bvid']}",
-                    "analysis_prompt": analysis_prompt,
-                    "subtitles_snippet": content_context[:200] + "...",
-                    "comments_snippet": comments_str
-                 }
-                 analyzed_creators.append(item)
-                 
-        return templates.TemplateResponse("results.html", {"request": request, "track": f"Video: {bvid}", "results": analyzed_creators, "platform": platform_input})
+        # candidates are effectively 'raw_videos' for b_search
+        pass
 
     # --- NORMAL TRACK SEARCH ---
     print("  > Detected Track Search")

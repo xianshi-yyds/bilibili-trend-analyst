@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer"> <!-- Fix image loading -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test - 深度分析报告</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff9d;
+            --bg-dark: #0a0a0f;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-bg-hover: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --card-radius: 20px;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+            background-color: var(--bg-dark);
+            color: #eee;
+            min-height: 100vh;
+        }
+
+        /* Ambient Background */
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 15% 15%, rgba(0, 243, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(255, 0, 255, 0.06) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        /* Header */
+        header {
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .keyword-gradient {
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        /* Creator Card */
+        .creator-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--card-radius);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .creator-card:hover {
+            transform: translateY(-5px);
+            background: var(--glass-bg-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Stats Grid */
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: white;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 4px;
+        }
+
+        /* Video Preview */
+        .video-cover-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            /* 16:9 */
+            border-radius: 12px;
+            overflow: hidden;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .video-cover-container.vertical {
+            padding-bottom: 150%;
+            /* 2:3 aspect ratio approx for vertical content */
+        }
+
+        .video-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .creator-card:hover .video-cover {
+            transform: scale(1.05);
+        }
+
+        /* AI Tag */
+        .ai-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            color: var(--neon-blue);
+            font-size: 0.75rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        /* Analysis Box */
+        .analysis-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-left: 2px solid var(--neon-pink);
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            transition: all 0.2s;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ambient-bg"></div>
+
+    <header class="py-6 px-4 md:px-8 flex justify-between items-center max-w-7xl mx-auto w-full">
+        <div class="flex items-center gap-4">
+            <h1 class="text-2xl font-bold tracking-tight">赛道: <span class="keyword-gradient">test</span></h1>
+            
+        </div>
+        <a href="/" class="back-btn text-sm font-medium">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+            </svg>
+            返回搜索
+        </a>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 md:px-8 py-8">
+
+        
+        <div
+            class="flex flex-col items-center justify-center p-20 glass-card text-center rounded-3xl border border-white/5 bg-white/[0.02]">
+            <h2 class="text-2xl font-bold text-gray-400 mb-2">未找到相关博主，或 API 请求被拦截。</h2>
+            <p class="text-gray-600">请尝试不同的关键词，或者稍后再试。</p>
+        </div>
+        
+    </main>
+
+    <script>
+        // Move History Logic to Results Page (Only save successful searches)
+        document.addEventListener('DOMContentLoaded', function () {
+            const track = "test";
+            if (!track || track.startsWith("Video:") || track.includes("请求被拦截")) return;
+
+            try {
+                let history = JSON.parse(localStorage.getItem('bili_trend_history') || '[]');
+                // Remove if exists
+                history = history.filter(item => item !== track);
+                // Add to front
+                history.unshift(track);
+                // Limit to 8
+                if (history.length > 8) history = history.slice(0, 8);
+
+                localStorage.setItem('bili_trend_history', JSON.stringify(history));
+            } catch (e) {
+                console.error("History Save Failed", e);
+            }
+        });
+    </script>
+</body>
+
+</html>
